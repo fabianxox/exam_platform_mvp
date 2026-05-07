@@ -1,0 +1,33 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Environment
+.env
+
+# Logs
+logs/
+*.log
+
+#ignore only config file form core flder
+core/**/*.config
+
+# Database
+*.db
+
+# Alembic cache
+.alembic/
+
+# VS Code
+.vscode/
+
+# Node
+node_modules/
+
+# React build
+dist/
+
+# OS junk
+.DS_Store
+Thumbs.db
