@@ -1,9 +1,8 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-DATABASE_URL= 'postgresql://postgres:123@localhost/mvp'
-#Purpose: Database location + credentials.
 
-engine = create_engine(DATABASE_URL)
+from core.config import settings
+engine = create_engine(settings.DATABASE_URL)
 #Meaning: Prepare connection to database.
 #Note: Does NOT connect yet.
 

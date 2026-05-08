@@ -1,7 +1,8 @@
 from sqlalchemy import Column, Integer, Boolean, ForeignKey
 from sqlalchemy.orm import relationship
 from database.base import Base
-
+from sqlalchemy import DateTime
+from datetime import datetime
 
 class Attempt(Base):
     __tablename__ = "attempts"
@@ -17,6 +18,16 @@ class Attempt(Base):
       Integer,
       ForeignKey("exams.id"),
       nullable=False
+    )
+    
+    created_at = Column(
+      DateTime,
+      default=datetime.utcnow
+    )
+
+    submitted_at = Column(
+      DateTime,
+      nullable=True
     )
 
     score = Column(Integer, default=0)

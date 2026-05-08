@@ -13,19 +13,52 @@ from api import dev
 from models.question import Question
 from models.attempt import Attempt
 
+from datetime import datetime, timedelta
+
+from fastapi import Query
+
 router = APIRouter(tags=["exam"])
 
 @router.post("/exam/{exam_id}/start")
-def start_exam(exam_id: int, user=Depends(dev.get_current_user), db: Session = Depends(get_db)):
+def start_exam(
+    exam_id: int,
+    user=Depends(dev.student_only),
+    db: Session = Depends(get_db)
+):
 
-    attempt = models.Attempt(
+    # check existing active attempt
+    existing_attempt = db.query(Attempt).filter(
+        Attempt.user_id == user.id,
+        Attempt.exam_id == exam_id,
+        Attempt.completed == False
+    ).first()
+
+    # reuse existing attempt
+    if existing_attempt:
+
+        logger.info(
+            f"Existing attempt reused | "
+            f"user={user.id} exam={exam_id}"
+        )
+
+        return existing_attempt
+
+    # create fresh attempt
+    attempt = Attempt(
         user_id=user.id,
         exam_id=exam_id
     )
 
     db.add(attempt)
+
     db.commit()
+
     db.refresh(attempt)
+
+    logger.info(
+        f"New attempt created | "
+        f"user={user.id} exam={exam_id}"
+    )
 
     return attempt
 
@@ -33,7 +66,7 @@ def start_exam(exam_id: int, user=Depends(dev.get_current_user), db: Session = D
 def submit_exam(
     exam_id: int,
     data: schema.SubmitExam,
-    user=Depends(dev.get_current_user),
+    user=Depends(dev.student_only),
     db: Session = Depends(get_db)
 ):
 
@@ -45,7 +78,39 @@ def submit_exam(
     ).first()
 
     if not attempt:
-        raise HTTPException(404, "Active attempt not found")
+        raise HTTPException(
+            status_code=404,
+            detail="Active attempt not found"
+        )
+
+    # fetch exam
+    exam = db.query(models.exam.Exam).filter(
+        models.exam.Exam.id == exam_id
+    ).first()
+
+    if not exam:
+        raise HTTPException(
+            status_code=404,
+            detail="Exam not found"
+        )
+
+    # timer validation
+    exam_end_time = (
+        attempt.created_at +
+        timedelta(minutes=exam.duration)
+    )
+
+    if datetime.utcnow() > exam_end_time:
+
+        logger.warning(
+            f"Exam submission rejected due to timeout | "
+            f"user={user.id} exam={exam_id}"
+        )
+
+        raise HTTPException(
+            status_code=400,
+            detail="Exam time expired"
+        )
 
     score = 0
 
@@ -54,11 +119,13 @@ def submit_exam(
         models.exam_question.ExamQuestion.exam_id == exam_id
     ).all()
 
-    valid_question_ids = {l.question_id for l in links}
+    valid_question_ids = {
+        l.question_id for l in links
+    }
 
     for ans in data.answers:
 
-        # prevent cheating
+        # prevent invalid question submission
         if ans.question_id not in valid_question_ids:
             continue
 
@@ -69,7 +136,9 @@ def submit_exam(
         if not question:
             continue
 
-        is_correct = question.correct_answer == ans.answer
+        is_correct = (
+            question.correct_answer == ans.answer
+        )
 
         if is_correct:
             score += 1
@@ -84,17 +153,26 @@ def submit_exam(
 
         db.add(answer_row)
 
+    # finalize attempt
     attempt.score = score
+
     attempt.completed = True
 
+    attempt.submitted_at = datetime.utcnow()
+
     db.commit()
+
+    logger.info(
+        f"Exam submitted | "
+        f"user={user.id} exam={exam_id} score={score}"
+    )
 
     return {
         "score": score
     }
 
 @router.get("/exam/{exam_id}/result")
-def get_result(exam_id: int, user=Depends(dev.get_current_user), db: Session = Depends(get_db)):
+def get_result(exam_id: int, user=Depends(dev.student_only), db: Session = Depends(get_db)):
 
     attempt = db.query(Attempt).filter(
         Attempt.user_id == user.id,
@@ -136,10 +214,48 @@ def get_exam(
 
 @router.get("/exams")
 def get_exams(
-    user=Depends(dev.get_current_user),
+
+    user=Depends(dev.student_only),
+
+    page: int = Query(
+        default=1,
+        ge=1
+    ),
+
+    limit: int = Query(
+        default=10,
+        ge=1,
+        le=100
+    ),
+
     db: Session = Depends(get_db)
 ):
 
-    exams = db.query(models.exam.Exam).all()
+    try:
 
-    return exams
+        # calculate offset
+        offset = (page - 1) * limit
+
+        exams = db.query(models.exam.Exam)\
+            .offset(offset)\
+            .limit(limit)\
+            .all()
+
+        return {
+            "page": page,
+            "limit": limit,
+            "count": len(exams),
+            "items": exams
+        }
+
+    except SQLAlchemyError as e:
+
+        logger.error(
+            f"Error fetching exams: {e}",
+            exc_info=True
+        )
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Database error"
+        )

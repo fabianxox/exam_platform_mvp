@@ -13,6 +13,8 @@ function Exam() {
 
   const [answers, setAnswers] = useState([])
 
+  const [submitting, setSubmitting] = useState(false)
+
   useEffect(() => {
 
     async function loadExam() {
@@ -21,7 +23,7 @@ function Exam() {
 
         const token = localStorage.getItem("token")
 
-        // start attempt
+        // start or reuse attempt
         await api.post(
           `/exam/${id}/start`,
           {},
@@ -32,7 +34,7 @@ function Exam() {
           }
         )
 
-        // fetch exam
+        // fetch exam data
         const response = await api.get(
           `/exam/${id}`,
           {
@@ -45,7 +47,8 @@ function Exam() {
         setExam(response.data)
 
       } catch (err) {
-        console.log(err)
+
+        console.log(err.response?.data)
       }
     }
 
@@ -53,11 +56,12 @@ function Exam() {
 
   }, [])
 
+  // select answer
   function selectAnswer(questionId, answer) {
 
     setAnswers((prev) => {
 
-      // remove old answer if exists
+      // remove previous answer
       const filtered = prev.filter(
         (a) => a.question_id !== questionId
       )
@@ -72,9 +76,22 @@ function Exam() {
     })
   }
 
+  // check selected option
+  function isSelected(questionId, option) {
+
+    return answers.some(
+      (a) =>
+        a.question_id === questionId &&
+        a.answer === option
+    )
+  }
+
+  // submit exam
   async function submitExam() {
 
     try {
+
+      setSubmitting(true)
 
       const token = localStorage.getItem("token")
 
@@ -93,10 +110,14 @@ function Exam() {
       navigate(`/result/${id}`)
 
     } catch (err) {
-      console.log(err)
+
+      console.log(err.response?.data)
+
+      setSubmitting(false)
     }
   }
 
+  // loading state
   if (!exam) {
     return <h1>Loading...</h1>
   }
@@ -116,32 +137,100 @@ function Exam() {
 
           <h3>{q.text}</h3>
 
+          {/* OPTION A */}
           <button
             onClick={() => selectAnswer(q.id, q.option_a)}
+
+            style={{
+              backgroundColor: isSelected(
+                q.id,
+                q.option_a
+              )
+                ? "green"
+                : "white",
+
+              color: isSelected(
+                q.id,
+                q.option_a
+              )
+                ? "white"
+                : "black"
+            }}
           >
             {q.option_a}
           </button>
 
           <br /><br />
 
+          {/* OPTION B */}
           <button
             onClick={() => selectAnswer(q.id, q.option_b)}
+
+            style={{
+              backgroundColor: isSelected(
+                q.id,
+                q.option_b
+              )
+                ? "green"
+                : "white",
+
+              color: isSelected(
+                q.id,
+                q.option_b
+              )
+                ? "white"
+                : "black"
+            }}
           >
             {q.option_b}
           </button>
 
           <br /><br />
 
+          {/* OPTION C */}
           <button
             onClick={() => selectAnswer(q.id, q.option_c)}
+
+            style={{
+              backgroundColor: isSelected(
+                q.id,
+                q.option_c
+              )
+                ? "green"
+                : "white",
+
+              color: isSelected(
+                q.id,
+                q.option_c
+              )
+                ? "white"
+                : "black"
+            }}
           >
             {q.option_c}
           </button>
 
           <br /><br />
 
+          {/* OPTION D */}
           <button
             onClick={() => selectAnswer(q.id, q.option_d)}
+
+            style={{
+              backgroundColor: isSelected(
+                q.id,
+                q.option_d
+              )
+                ? "green"
+                : "white",
+
+              color: isSelected(
+                q.id,
+                q.option_d
+              )
+                ? "white"
+                : "black"
+            }}
           >
             {q.option_d}
           </button>
@@ -152,8 +241,18 @@ function Exam() {
 
       ))}
 
-      <button onClick={submitExam}>
-        Submit Exam
+      <button
+        onClick={submitExam}
+
+        disabled={submitting}
+      >
+
+        {
+          submitting
+            ? "Submitting..."
+            : "Submit Exam"
+        }
+
       </button>
 
     </div>

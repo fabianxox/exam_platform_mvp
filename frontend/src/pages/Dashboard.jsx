@@ -23,9 +23,11 @@ function Dashboard() {
           }
         })
 
-        setExams(response.data)
+        // pagination response
+        setExams(response.data.items)
 
       } catch (err) {
+
         console.log(err)
       }
     }
@@ -34,30 +36,65 @@ function Dashboard() {
 
   }, [])
 
+  function logout() {
+
+    localStorage.removeItem("token")
+
+    navigate("/")
+  }
+
   return (
-    <div>
 
-      <h1>Dashboard</h1>
+    <div className="min-h-screen bg-gray-100 p-6">
 
-      {exams.map((exam) => (
+      <div className="flex justify-between items-center mb-6">
 
-        <div key={exam.id}>
+        <h1 className="text-3xl font-bold">
+          Dashboard
+        </h1>
 
-          <h3>{exam.title}</h3>
+        <button
+          onClick={logout}
+          className="bg-red-500 text-white px-4 py-2 rounded"
+        >
+          Logout
+        </button>
 
-          <p>Duration: {exam.duration} mins</p>
+      </div>
 
-          <button
-            onClick={() => navigate(`/exam/${exam.id}`)}
+      {exams.length === 0 ? (
+
+        <p>No exams available</p>
+
+      ) : (
+
+        exams.map((exam) => (
+
+          <div
+            key={exam.id}
+            className="bg-white p-4 rounded-xl shadow mb-4"
           >
-            Start Exam
-          </button>
 
-          <hr />
+            <h2 className="text-xl font-bold">
+              {exam.title}
+            </h2>
 
-        </div>
+            <p className="text-gray-600">
+              Duration: {exam.duration} mins
+            </p>
 
-      ))}
+            <button
+              onClick={() => navigate(`/exam/${exam.id}`)}
+              className="mt-4 bg-green-500 text-white px-4 py-2 rounded"
+            >
+              Start Exam
+            </button>
+
+          </div>
+
+        ))
+
+      )}
 
     </div>
   )

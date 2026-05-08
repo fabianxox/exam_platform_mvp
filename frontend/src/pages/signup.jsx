@@ -1,38 +1,36 @@
 import { useState } from "react"
-import { useNavigate, Link } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
 
 import api from "../services/api"
 
-function Login() {
+function Signup() {
 
   const [email, setEmail] = useState("")
+
   const [password, setPassword] = useState("")
 
   const navigate = useNavigate()
 
-  async function handleLogin(e) {
+  async function handleSignup(e) {
 
     e.preventDefault()
 
     try {
 
-      const response = await api.post("/login", {
+      await api.post("/user", {
         email,
         password
       })
 
-      localStorage.setItem(
-        "token",
-        response.data.access_token
-      )
+      alert("Account created successfully")
 
-      navigate("/dashboard")
+      navigate("/")
 
     } catch (err) {
 
       console.log(err)
 
-      alert("Login failed")
+      alert("Signup failed")
     }
   }
 
@@ -41,12 +39,12 @@ function Login() {
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
 
       <form
-        onSubmit={handleLogin}
+        onSubmit={handleSignup}
         className="bg-white p-8 rounded-xl shadow-md w-80"
       >
 
         <h1 className="text-2xl font-bold mb-6 text-center">
-          Login
+          Signup
         </h1>
 
         <input
@@ -67,23 +65,10 @@ function Login() {
 
         <button
           type="submit"
-          className="w-full bg-blue-500 text-white p-2 rounded"
+          className="w-full bg-green-500 text-white p-2 rounded"
         >
-          Login
+          Create Account
         </button>
-
-        <p className="mt-4 text-center">
-
-          No account?
-
-          <Link
-            to="/signup"
-            className="text-blue-500 ml-1"
-          >
-            Signup
-          </Link>
-
-        </p>
 
       </form>
 
@@ -91,4 +76,4 @@ function Login() {
   )
 }
 
-export default Login
+export default Signup
