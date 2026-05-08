@@ -8,9 +8,10 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     DATABASE_URL: str
 
-    model_config = SettingsConfigDict(
-        env_file=".env"
-    )
+#on hosting we will set the psql path and all secrets directly there, while local test the lines below are needed
+  #  model_config = SettingsConfigDict(
+   #     env_file=".env"
+    #) 
 
 
 settings = Settings()
