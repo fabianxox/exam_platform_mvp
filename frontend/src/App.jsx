@@ -4,7 +4,7 @@ import Login from "./pages/Login"
 import Dashboard from "./pages/Dashboard"
 import Exam from "./pages/Exam"
 import Result from "./pages/Result"
-import Signup from "./pages/Signup"
+import Signup from "./pages/signup"
 
 import ProtectedRoute from "./components/ProtectedRoute"
 
